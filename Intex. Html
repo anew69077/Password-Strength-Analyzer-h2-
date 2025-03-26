@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Strength Checker</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@7/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+    <style>
+        body {
+            font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .password-box {
+            position: relative;
+            margin: 1rem 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .check-button {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .check-button:hover {
+            background: #45a049;
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .check-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .strength-meter {
+            display: flex;
+            gap: 5px;
+            margin: 1.5rem 0;
+            height: 10px;
+        }
+
+        .bar {
+            flex: 1;
+            background: #eee;
+            border-radius: 5px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bar.active {
+            background: linear-gradient(45deg, #4CAF50, #66BB6A);
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+        }
+
+        .results {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+        }
+
+        .suggestions li {
+            padding: 8px 0;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function PasswordChecker() {
+            const [password, setPassword] = React.useState('');
+            const [analysis, setAnalysis] = React.useState(null);
+            const [showResults, setShowResults] = React.useState(false);
+
+            const checkStrength = () => {
+                if (!password) return;
+                const result = zxcvbn(password);
+                setAnalysis({
+                    score: result.score,
+                    suggestions: result.feedback.suggestions,
+                    crackTime: result.crack_times_display.online_no_throttling_10_per_second
+                });
+                setShowResults(true);
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') checkStrength();
+            };
+
+            return (
+                <div className="container">
+                    <h1 style={{ textAlign: 'center', color: '#333' }}>🔒 Password Strength Checker</h1>
+                    
+                    <div className="password-box">
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Enter your password..."
+                        />
+                        <button 
+                            className="check-button"
+                            onClick={checkStrength}
+                            disabled={!password}
+                        >
+                            <span>▶</span>
+                            Check
+                        </button>
+                    </div>
+
+                    {showResults && analysis && (
+                        <div className="results">
+                            <div className="strength-meter">
+                                {[1,2,3,4].map(i => (
+                                    <div 
+                                        key={i}
+                                        className={`bar ${i <= analysis.score ? 'active' : ''}`}
+                                    />
+                                ))}
+                            </div>
+                            
+                            <h3>Security Report:</h3>
+                            <p>⏳ Estimated crack time: {analysis.crackTime}</p>
+                            
+                            {analysis.suggestions.length > 0 && (
+                                <>
+                                    <h4>💡 Improvement Suggestions:</h4>
+                                    <ul>
+                                        {analysis.suggestions.map((suggestion, i) => (
+                                            <li key={i}>{suggestion}</li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function App() {
+            return <PasswordChecker />;
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
